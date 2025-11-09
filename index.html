@@ -6,213 +6,336 @@
     <title>Sinyal Takip</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Tam ekran, kaydırmasız bir uygulama hissi verir */
+        /* Modern reset ve temel stiller */
         html, body {
             overscroll-behavior: none;
             height: 100%;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0c1a2d; /* Koyu Mavi Harita Rengi */
+            font-family: 'Roboto Mono', monospace, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; /* Daha teknik font */
+            background-color: #0d121c; /* Çok koyu gri/mavi */
+            color: #d1d5db; /* Açık gri metin */
         }
-        /* iOS Home Bar alanı için alt boşluk */
         body {
             padding-bottom: env(safe-area-inset-bottom);
         }
-        
-        /* --- BAŞLANGIÇ EKRANI --- */
+
+        /* Başlangıç Ekranı - Daha Minimal */
         #splash-screen {
-            position: fixed; inset: 0; background-color: #111827;
+            position: fixed; inset: 0; background-color: #0d121c;
             z-index: 101; display: flex; flex-direction: column;
             align-items: center; justify-content: center; text-align: center;
             padding: 2rem; transition: opacity 0.5s ease-out;
+            color: #e2e8f0;
         }
-        #splash-screen button { transition: all 0.2s ease; }
-        #splash-screen button:active { transform: scale(0.95); background-color: #1d4ed8; }
+        #splash-screen h1 { font-size: 2.5rem; font-weight: 700; color: #3b82f6; } /* Mavi başlık */
+        #splash-screen p { color: #94a3b8; margin-bottom: 3rem; }
+        #splash-screen button {
+            background: linear-gradient(145deg, #3b82f6, #2563eb);
+            color: white; border-radius: 9999px; width: 160px; height: 160px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+            transition: all 0.3s ease;
+        }
+        #splash-screen button:active { transform: scale(0.92); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.6); }
         .splash-icon {
-            width: 80px; height: 80px; color: white;
-            animation: pulse-on 2s infinite;
+            width: 70px; height: 70px; animation: pulse-on 1.5s infinite;
         }
 
-        /* --- YÜKLENİYOR EKRANI --- */
+        /* Yükleniyor Ekranı */
         #loading-screen {
-            position: fixed; inset: 0; background-color: #111827;
+            position: fixed; inset: 0; background-color: #0d121c;
             z-index: 100; display: none; flex-direction: column;
             align-items: center; justify-content: center;
             gap: 20px; opacity: 0; transition: opacity 0.5s ease-in;
+            color: #e2e8f0;
         }
         .loader {
-            width: 60px; height: 60px; border: 5px solid #374151;
+            width: 60px; height: 60px; border: 5px solid #2d3748;
             border-top-color: #3b82f6; border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- ANA UYGULAMA (Başta gizli) --- */
+        /* Ana Uygulama */
         #main-app {
             display: none; opacity: 0; transition: opacity 0.5s ease-in;
+            position: relative;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #0d121c; /* Harita dışı arka plan */
         }
 
-        /* --- SAHTE HARİTA STİLLERİ --- */
-        .fake-map {
-            background-color: #0c1a2d;
-            position: absolute; inset: 0; overflow: hidden;
-        }
-        .fake-map .river {
-            position: absolute; top: 60%; left: -10%;
-            width: 120%; height: 15px; background-color: #0a1421;
-            transform: rotate(-10deg); z-index: 1;
-        }
-        .fake-map .road1 {
-            position: absolute; top: 20%; left: 50%;
-            width: 2px; height: 70%; background-color: #2a3a4d;
-            opacity: 0.8; transform: rotate(25deg);
-        }
-        .fake-map .road2 {
-            position: absolute; top: 40%; left: 10%;
-            width: 1px; height: 30%; background-color: #2a3a4d;
-            opacity: 0.6; transform: rotate(5deg);
-        }
-        .map-label {
-            position: absolute; color: #4b5563; font-weight: 600;
-            font-size: 0.8rem; z-index: 10; text-shadow: 0 0 5px #000;
-        }
-        
-        /* --- GÜNCELLENDİ: Harita Konteyneri (Pan & Zoom için) --- */
+        /* Harita Konteyneri */
         #map-container {
             position: absolute; inset: 0;
-            /* Transform hem JS'den pan (translate) hem de zoom (scale) alacak */
-            transition: transform 0.5s ease-out;
-            /* Başlangıçta haritanın 50% 50%'si ortada olacak */
+            transition: transform 0.6s ease-out; /* Yumuşak hareket */
             transform-origin: 50% 50%;
+            background-color: #0f172a; /* Harita arka planı */
         }
+        
+        /* Sahte Harita Detayları - DAHA GERÇEKÇİ */
+        .fake-map {
+            position: absolute; inset: 0; overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #0f172a 0%, #080c14 100%);
+            /* Hafif bir gren efekti için filter */
+            filter: saturate(0.8) brightness(1.1) contrast(1.1);
+        }
+        .fake-map .detail-layer { /* Genel detay katmanı */
+            position: absolute; inset: -50%; /* Biraz taşsın */
+            background-image: 
+                /* Hafif, dağınık doku */
+                url("data:image/svg+xml,%3Csvg width='100%' height='100%' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1h1v1h-1zM3 1h1v1h-1zM5 1h1v1h-1zM7 1h1v1h-1z' fill='%231a202c' fill-opacity='0.15'/%3E%3C/svg%3E"),
+                /* Açık toprak tonunda benekler */
+                radial-gradient(circle at 10% 20%, rgba(20, 25, 35, 0.1), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(20, 25, 35, 0.1), transparent 30%);
+            background-size: 10px 10px, cover, cover;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .fake-map .river { /* Nehir */
+            position: absolute; top: 60%; left: -10%;
+            width: 120%; height: 18px;
+            background: linear-gradient(to right, #0a1421, #0b172a, #0a1421);
+            transform: rotate(-10deg); z-index: 1;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+        }
+        .fake-map .road1, .fake-map .road2 { /* Yollar */
+            position: absolute;
+            background: linear-gradient(to bottom, #1e293b, #151e2b, #1e293b);
+            opacity: 0.9;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+            border-radius: 2px;
+        }
+        .fake-map .road1 { top: 20%; left: 50%; width: 3px; height: 70%; transform: rotate(25deg); }
+        .fake-map .road2 { top: 40%; left: 10%; width: 2px; height: 30%; transform: rotate(5deg); }
+        .map-label {
+            position: absolute; color: #64748b; font-weight: 500;
+            font-size: 0.75rem; z-index: 10;
+            text-shadow: 1px 1px 2px #000;
+            letter-spacing: 0.05em;
+            transform: rotate(-5deg); /* Biraz eğimli duruş */
+        }
+        .map-label.firtina { top: 58%; left: 50%; transform: rotate(-10deg) translateX(-20px); color: #3b82f6; font-weight: 700; }
+        .map-label.baskoy { top: 25%; right: 10%; transform: rotate(10deg); }
+        .map-label.kackar { top: 30%; left: 55%; transform: rotate(25deg); }
+        .map-label.camlihemsin { top: 45%; left: 15%; transform: rotate(5deg); }
 
-        /* GPS HEDEF İKONLARI */
+
+        /* GPS HEDEF İKONLARI - DAHA GERÇEKÇİ */
         .map-marker {
-            position: absolute; z-index: 20; display: flex;
+            position: absolute; z-index: 30; display: flex;
             flex-direction: column; align-items: center;
             cursor: pointer; transition: transform 0.2s ease, opacity 0.3s ease;
             opacity: 0.8;
+            filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6));
         }
         .map-marker .icon-bg {
-            width: 44px; height: 44px; border-radius: 50%;
+            width: 48px; height: 48px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            animation: pulse-off 1.5s infinite;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5); /* İç gölge */
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden; /* İç parlama için */
         }
+        .map-marker .icon-bg::before { /* İç parlama efekti */
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .map-marker.selected .icon-bg::before { opacity: 1; }
+
         .map-marker .label {
-            background-color: rgba(0, 0, 0, 0.7); color: white; padding: 2px 8px;
-            border-radius: 8px; font-size: 0.75rem; font-weight: 600;
-            margin-bottom: 4px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            background-color: rgba(0, 0, 0, 0.8); color: #e2e8f0;
+            padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;
+            margin-bottom: 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap; /* Tek satırda kalır */
         }
-        /* Seçiliyken parlama animasyonu */
         .map-marker.selected {
             opacity: 1;
             transform: scale(1.1);
-            z-index: 21; /* Diğerlerinin üstüne çıkar */
+            z-index: 31; /* Diğerlerinin üstüne çıkar */
+            animation: marker-pulse 1.5s infinite;
         }
-        .map-marker.selected .icon-bg {
-            animation: pulse-on 1.5s infinite;
-            border-color: #fff;
-        }
-        @keyframes pulse-on {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            50% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-        }
-        @keyframes pulse-off {
-            0% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+        @keyframes marker-pulse {
+            0%, 100% { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.6)); }
+            50% { filter: drop-shadow(0 0 18px rgba(59, 130, 246, 0.8)); }
         }
 
-        /* YENİ: ÜST BAR */
+        /* Radar Tarama Efekti (Harita Üzeri) - DAHA GERÇEKÇİ */
+        #radar-sweep-container {
+            position: absolute;
+            top: 50%; /* Haritanın merkezi (Kınalı'nın konumu) */
+            left: 50%;
+            width: 800px; height: 800px; /* Büyük alan */
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            overflow: hidden;
+            z-index: 15; /* Marker'ların altında, haritanın üstünde */
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            /* box-shadow: 0 0 30px rgba(59, 130, 246, 0.4); */ /* YORUM SATIRI: Kaldırıldı */
+        }
+        #radar-grid-lines { /* Radar ızgarası */
+            display: none; /* YENİ: Gizlendi */
+            position: absolute; inset: 0;
+            background: 
+                radial-gradient(circle, transparent 20%, rgba(59, 130, 246, 0.1) 20.5%, transparent 21%),
+                radial-gradient(circle, transparent 40%, rgba(59, 130, 246, 0.1) 40.5%, transparent 41%),
+                radial-gradient(circle, transparent 60%, rgba(59, 130, 246, 0.1) 60.5%, transparent 61%),
+                linear-gradient(to right, transparent 49.5%, rgba(59, 130, 246, 0.2) 49.5%, rgba(59, 130, 246, 0.2) 50.5%, transparent 50.5%),
+                linear-gradient(to bottom, transparent 49.5%, rgba(59, 130, 246, 0.2) 49.5%, rgba(59, 130, 246, 0.2) 50.5%, transparent 50.5%);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        #radar-sweep {
+            display: none; /* YENİ: Gizlendi */
+            position: absolute; inset: 0;
+            animation: spin 4s linear infinite;
+        }
+        #radar-sweep::after {
+            content: ''; position: absolute; top: 0; left: 50%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to left, transparent, rgba(59, 130, 246, 0.3)); /* Mavi tarama çizgisi */
+            transform-origin: 0 50%;
+            filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.7)); /* Tarayıcıya parlama */
+        }
+        #radar-pulse-effect { /* Merkezden yayılan sinyal dalgası */
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0; border-radius: 50%;
+            /* background-color: rgba(59, 130, 246, 0.4); */ /* YORUM SATIRI: Kaldırıldı (Keyframe'e taşındı) */
+            transform: translate(-50%, -50%);
+            animation: radar-pulse 2s infinite ease-out;
+            opacity: 0;
+        }
+        @keyframes radar-pulse {
+            0% { width: 0; height: 0; opacity: 1; border: 2px solid rgba(59, 130, 246, 0.7); } /* YENİ: Border eklendi */
+            100% { width: 100%; height: 100%; opacity: 0; border: 2px solid rgba(59, 130, 246, 0); } /* YENİ: Border eklendi */
+        }
+
+        /* HUD Panelleri - Gerçekçi Görünüm */
+        .hud-panel {
+            position: absolute; z-index: 40;
+            background-color: rgba(13, 18, 28, 0.7); /* Koyu arkaplan */
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(59, 130, 246, 0.3); /* Mavi çerçeve */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+            color: #a5f3fc; /* Açık mavi metin */
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+        }
+        .hud-panel .title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #e0f2fe; /* Beyazımsı başlık */
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+        }
+        .hud-panel span { display: block; line-height: 1.3; }
+
+        /* Top Bar - Daha İnce */
         .top-bar {
             position: absolute; top: 0; left: 0; right: 0;
-            z-index: 25;
-            padding: 12px 16px;
+            z-index: 50;
+            padding: 10px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            /* iPhone çentiği için üstten boşluk */
-            padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+            background: linear-gradient(to bottom, rgba(13, 18, 28, 0.8), transparent);
         }
+        .top-bar h1 { font-size: 1.5rem; font-weight: 700; color: #e0f2fe; text-shadow: 0 0 8px rgba(59, 130, 246, 0.7); }
         .top-bar-button {
-            width: 44px; height: 44px;
+            width: 40px; height: 40px;
             background-color: rgba(31, 41, 55, 0.7);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            color: white; border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            color: #a5f3fc; border: 1px solid rgba(59, 130, 246, 0.3);
+            transition: all 0.2s ease;
         }
+        .top-bar-button:active { transform: scale(0.9); background-color: rgba(31, 41, 55, 0.9); }
 
-        /* HARİTA KONTROLLERİ (ZOOM) */
+        /* Harita Kontrolleri (Zoom) */
         .map-controls {
             position: absolute;
-            /* YENİ: Üst barın altına alındı */
-            top: calc(env(safe-area-inset-top, 0px) + 70px);
-            right: 16px;
-            z-index: 25;
+            top: calc(env(safe-area-inset-top, 0px) + 65px); /* Top bar'ın altında */
+            right: 15px;
+            z-index: 50;
             display: flex; flex-direction: column; gap: 1px;
-            background-color: rgba(60, 60, 60, 0.8);
+            background-color: rgba(13, 18, 28, 0.7);
+            backdrop-filter: blur(8px);
             border-radius: 8px; overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
         .map-controls button {
-            width: 40px; height: 40px; font-size: 1.5rem;
-            font-weight: 300; color: white; background-color: transparent;
-            border: none; border-bottom: 1px solid #4b5563;
+            width: 38px; height: 38px; font-size: 1.4rem;
+            font-weight: 300; color: #a5f3fc; background-color: transparent;
+            border: none; border-bottom: 1px solid rgba(59, 130, 246, 0.2);
             cursor: pointer;
+            transition: all 0.2s ease;
         }
         .map-controls button:last-child { border-bottom: none; }
-        .map-controls button:active { background-color: rgba(0,0,0,0.2); }
+        .map-controls button:active { background-color: rgba(59, 130, 246, 0.1); }
         
-        /* YENİ: TELEMETRİ PANELİ (SOL ALT) */
+        /* Telemetri Paneli (Sol Alt) */
         #telemetry-panel {
             position: absolute;
             bottom: 20px;
-            left: 16px;
-            z-index: 30;
-            width: 220px;
-            background-color: rgba(20, 20, 20, 0.7);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            padding: 12px;
-            color: #e5e7eb;
+            left: 15px;
+            z-index: 50;
+            width: 250px;
+            background-color: rgba(13, 18, 28, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            padding: 12px 15px;
+            color: #a5f3fc;
             transition: opacity 0.3s ease, transform 0.3s ease;
-            opacity: 0; /* Başlangıçta gizli */
+            opacity: 0;
             transform: translateY(10px);
+            font-family: 'Roboto Mono', monospace;
         }
         #telemetry-panel.visible {
             opacity: 1;
             transform: translateY(0);
         }
-        #telemetry-panel h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: white;
-            margin-bottom: 4px;
+        #telemetry-panel .title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #e0f2fe;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
         }
         #telemetry-panel p {
-            font-size: 0.85rem;
-            color: #d1d5db;
+            font-size: 0.8rem;
+            color: #a5f3fc;
             line-height: 1.4;
         }
         #telemetry-status {
             font-weight: 700;
             margin-top: 8px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            color: #e0f2fe;
         }
-        .status-live { color: #34d399; } /* Yeşil */
-        .status-offline { color: #f87171; } /* Kırmızı */
-        .status-self { color: #60a5fa; } /* Mavi */
+        .status-live { color: #34d399; text-shadow: 0 0 5px rgba(52, 211, 153, 0.7); }
+        .status-offline { color: #f87171; text-shadow: 0 0 5px rgba(248, 113, 113, 0.7); }
+        .status-self { color: #60a5fa; text-shadow: 0 0 5px rgba(96, 165, 250, 0.7); }
 
-        /* YENİ: HEDEF SEÇİCİ (SAĞ ALT) */
+        /* Hedef Seçici (Sağ Alt) */
         #target-switcher {
             position: absolute;
             bottom: 20px;
-            right: 16px;
-            z-index: 30;
+            right: 15px;
+            z-index: 50;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -220,66 +343,95 @@
         .target-button {
             width: 48px; height: 48px;
             background-color: rgba(31, 41, 55, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 50%;
-            color: white;
+            color: #e0f2fe;
             font-weight: 600;
             font-size: 1.1rem;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
             transition: all 0.2s ease;
         }
         .target-button:active {
             transform: scale(0.9);
+            background-color: rgba(31, 41, 55, 0.9);
         }
         .target-button.selected {
-            background-color: #3b82f6; /* Mavi */
-            border-color: #a5b4fc;
+            background-color: #3b82f6;
+            border-color: #e0f2fe;
             transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
         }
 
+        /* YENİ: Sağ Üst ve Alt Orta HUD Panelleri */
+        #system-status-hud {
+            top: calc(env(safe-area-inset-top, 0px) + 15px);
+            left: 15px;
+        }
+        #gps-coords-hud {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            white-space: nowrap; /* Tek satırda kalır */
+            padding: 8px 12px;
+        }
+        #gps-coords-hud .title { display: none; } /* GPS koordinatında başlığa gerek yok */
+
+
+        /* GLITCH EFEKTLERİ (İsteğe bağlı, daha gelişmiş bir görünüm için) */
+        .glitch-text {
+            animation: glitch 2s linear infinite;
+        }
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 red, -2px 0 blue; }
+            20% { text-shadow: 2px 0 red, -2px 0 blue; transform: translateX(-2px); }
+            40% { text-shadow: -2px 0 red, 2px 0 blue; transform: translateX(2px); }
+            60% { text-shadow: 2px 0 red, -2px 0 blue; transform: translateX(-1px); }
+            80% { text-shadow: -2px 0 red, 2px 0 blue; transform: translateX(1px); }
+            100% { text-shadow: 2px 0 red, -2px 0 blue; }
+        }
     </style>
 </head>
 <body class="bg-gray-900 h-screen overflow-hidden text-white">
 
     <div id="splash-screen">
-        <h1 class="text-4xl font-bold text-white mb-4">Sinyal Takip</h1>
-        <p class="text-lg text-gray-400 mb-12">Hedef cihazları bulmak için taramayı başlatın.</p>
-        <button onclick="startSearch()" class="bg-blue-600 text-white rounded-full w-40 h-40 flex items-center justify-center shadow-lg transition-all transform hover:scale-105 active:scale-95">
+        <h1 class="glitch-text">Sinyal Takip</h1>
+        <p class="text-lg text-gray-400">Hedef sistemleri taranıyor...</p>
+        <button onclick="startSearch()">
             <svg class="splash-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.33 15.33a8.025 8.025 0 0 1-8.66 0M17.48 12.9a11.03 11.03 0 0 0-10.96 0M19.6 10.4a13.98 13.98 0 0 0-15.2 0M12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"></path>
             </svg>
         </button>
-        <span class="mt-6 text-lg font-medium text-white">Taramayı Başlat</span>
+        <span class="mt-6 text-lg font-medium text-blue-300">Sistemi Başlat</span>
     </div>
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <h1 class="text-2xl font-semibold text-gray-300">Cihazlar Aranıyor...</h1>
-        <p class="text-lg text-gray-500">Kınalı, hedefleri buluyor...</p>
+        <h1 class="text-2xl font-semibold text-blue-300 glitch-text">Cihazlar Aranıyor...</h1>
+        <p class="text-lg text-gray-500">Kınalı, hedef sinyallerini kalibre ediyor...</p>
     </div>
 
     <div id="main-app" class="relative h-full w-full max-w-lg mx-auto">
 
-        <!-- GÜNCELLENDİ: Harita artık transform alacak -->
         <div id="map-container" style="transform: translate(0, 0) scale(1);">
             <div class="fake-map">
+                <div class="detail-layer"></div>
                 <div class="river"></div>
                 <div class="road1"></div>
                 <div class="road2"></div>
-                <span class="map-label" style="transform: rotate(-10deg) translateX(-20px); top: 58%; left: 50%;">
-                    Fırtına Deresi
-                </span>
-                <span class="map-label" style="transform: rotate(10deg); top: 25%; right: 10%;">
-                    Başköy Küme Evleri
-                </span>
-                <span class="map-label" style="transform: rotate(25deg); top: 30%; left: 55%;">
-                    Kaçkar Yolu
-                </span>
-                <span class="map-label" style="transform: rotate(5deg); top: 45%; left: 15%;">
-                    Çamlıhemşin Yolu
-                </span>
+                <span class="map-label firtina">Fırtına Deresi</span>
+                <span class="map-label baskoy">Başköy Küme Evleri</span>
+                <span class="map-label kackar">Kaçkar Yolu</span>
+                <span class="map-label camlihemsin">Çamlıhemşin Yolu</span>
+            </div>
+
+            <!-- Dönen Radar Taraması (Haritanın üstünde) --><div id="radar-sweep-container">
+                <!-- <div id="radar-grid-lines"></div> --> <!-- YENİ: Kaldırıldı/Gizlendi -->
+                <!-- <div id="radar-sweep"></div> --> <!-- YENİ: Kaldırıldı/Gizlendi -->
+                <div id="radar-pulse-effect"></div>
             </div>
 
             <div id="marker-container" class="absolute inset-0 z-20">
@@ -298,32 +450,29 @@
             </div>
         </div>
         
-        <!-- YENİ: ÜST BAR -->
-        <div class="top-bar">
-            <h1 class="text-xl font-bold text-white text-shadow-lg">Sinyal Takip</h1>
-            <button id="scan-button" class="top-bar-button">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8v4l3 3lg-3 3v4M8 4h4l3 3-3 3H8V4zm8 12h4l-3-3 3-3h-4v6zM12 8v4l3 3-3 3V8z"></path></svg>
-            </button>
+        <!-- YENİ: Sistem Durum HUD'u (Sol Üst) --><div id="system-status-hud" class="hud-panel">
+            <div class="title">SİSTEM DURUMU</div>
+            <!-- <span id="system-clock"></span> --> <!-- YENİ: Saat kaldırıldı -->
+            <span id="system-status-text">Bağlantı: Stabil</span>
         </div>
 
-        <!-- GÜNCELLENDİ: ZOOM KONTROLLERİ (Konumu ayarlandı) -->
-        <div class="map-controls">
+        <!-- Harita Kontrolleri (Zoom) --><div class="map-controls">
             <button id="zoom-in" aria-label="Yakınlaştır">+</button>
             <button id="zoom-out" aria-label="Uzaklaştır">-</button>
         </div>
 
-        <!-- KALDIRILDI: Alt panel (bottom-sheet) -->
-
-        <!-- YENİ: TELEMETRİ PANELİ -->
-        <div id="telemetry-panel">
-            <h3 id="telemetry-name">Hedef Seçilmedi</h3>
-            <p id="telemetry-location">Taramayı başlatın veya bir hedef seçin.</p>
-            <p id="telemetry-coords"></p>
+        <!-- Telemetri Paneli (Sol Alt) --><div id="telemetry-panel" class="hud-panel">
+            <div class="title" id="telemetry-name">Hedef Seçilmedi</div>
+            <p id="telemetry-location">Sistem Taranıyor... Lütfen bir hedef seçin.</p>
+            <p id="telemetry-coords">Koordinatlar: Taranıyor...</p>
             <p id="telemetry-status"></p>
         </div>
 
-        <!-- YENİ: HEDEF SEÇİCİ -->
-        <div id="target-switcher">
+        <!-- YENİ: GPS Koordinat HUD'u (Alt Orta) --><div id="gps-coords-hud" class="hud-panel">
+            <span id="current-gps-coords">GPS: 40.910° N, 41.078° E</span>
+        </div>
+
+        <!-- Hedef Seçici (Sağ Alt) --><div id="target-switcher">
             <button id="azil-button" class="target-button" onclick="selectDevice('azil')">A</button>
             <button id="mehmet-button" class="target-button" onclick="selectDevice('mehmet')">M</button>
             <button id="kinali-button" class="target-button" onclick="selectDevice(null)">K</button>
@@ -337,46 +486,55 @@
         const mainApp = document.getElementById('main-app');
         const mapContainer = document.getElementById('map-container');
         const telemetryPanel = document.getElementById('telemetry-panel');
+        const sweepContainer = document.getElementById('radar-sweep-container');
+        const radarPulseEffect = document.getElementById('radar-pulse-effect'); // Yeni
         
         const mapMarkers = document.querySelectorAll('.map-marker');
         const targetButtons = document.querySelectorAll('.target-button');
-        const timestamps = document.querySelectorAll('.timestamp'); // Bu artık kullanılmıyor ama kalsın
         
-        // --- YENİ: Hedef Veri Bankası ---
+        // HUD elemanları
+        /* const systemClock = document.getElementById('system-clock'); */ // YENİ: Kaldırıldı
+        const systemStatusText = document.getElementById('system-status-text');
+        const currentGpsCoords = document.getElementById('current-gps-coords');
+
+        // --- Hedef Veri Bankası ---
         const targets = {
             'azil': { 
-                name: 'Hedef: Azil', 
-                location: 'Başköy Küme Evleri, Rize', 
-                coords: '40.912° N, 41.081° E', 
-                status: 'SİNYAL CANLI',
+                name: 'HEDEF: AZİL', 
+                location: 'KONUM: BAŞKÖY KÜME EVLERİ', 
+                coords: 'GPS: 40.912° N, 41.081° E', 
+                status: 'SİNYAL: CANLI',
                 statusClass: 'status-live',
-                panX: 0, // 50%
-                panY: -10, // 40% (Merkeze 50% gelmesi için +10 lazım) - pardon 50-40 = 10%
-                markerId: 'azil-marker'
+                panX: 0, 
+                panY: -10,
+                markerId: 'azil-marker',
+                currentGps: '40.912° N, 41.081° E' // Anlık GPS için
             },
             'mehmet': { 
-                name: 'Hedef: Mehmet', 
-                location: 'Kaçkar Yolu, Fırtına Deresi', 
-                coords: '40.905° N, 41.075° E', 
-                status: 'SİNYAL ZAYIF',
+                name: 'HEDEF: MEHMET', 
+                location: 'KONUM: KAÇKAR YOLU, FIRTINA DERESİ', 
+                coords: 'GPS: 40.905° N, 41.075° E', 
+                status: 'SİNYAL: ZAYIF',
                 statusClass: 'status-offline',
-                panX: 5,  // 45% (Merkeze 50% gelmesi için +5 lazım)
-                panY: 15, // 35% (Merkeze 50% gelmesi için +15 lazım)
-                markerId: 'mehmet-marker'
+                panX: 5,
+                panY: 15,
+                markerId: 'mehmet-marker',
+                currentGps: '40.905° N, 41.075° E'
             },
             'kinali': { 
-                name: "Kınalı (Operatör)", 
-                location: 'Bu Aygıt', 
-                coords: 'Güvenli Konum',
-                status: 'ÇEVRİMİÇİ',
+                name: "TARAMA MODU", /* YENİ: Değiştirildi */
+                location: 'KONUM: MERKEZ', /* YENİ: Değiştirildi */
+                coords: 'GPS: SİSTEM AKTİF', /* YENİ: Değiştirildi */
+                status: 'DURUM: AKTİF TARAMA',
                 statusClass: 'status-self',
-                panX: 0, // 50% (Merkez)
-                panY: 0, // 50% (Merkez)
-                markerId: null
+                panX: 0,
+                panY: 0,
+                markerId: null, // Kınalı'nın marker'ı yok
+                currentGps: '40.910° N, 41.078° E'
             }
         };
 
-        // --- YENİ: Harita Durum Değişkenleri ---
+        // --- Harita Durum Değişkenleri ---
         let currentZoom = 1.0;
         let currentPanX = 0;
         let currentPanY = 0;
@@ -395,13 +553,25 @@
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                     mainApp.style.opacity = '1';
-                    // Başlangıçta operatörü (Kınalı) seç
-                    selectDevice(null); 
+                    /* updateClock(); // Saati başlat */ // YENİ: Kaldırıldı
+                    /* setInterval(updateClock, 1000); // Her saniye güncelle */ // YENİ: Kaldırıldı
+                    selectDevice(null); // Başlangıçta Kınalı'yı seç (tarama modunda)
                 }, 500);
             }, 2500);
         }
         
-        // --- YENİ: CİHAZ SEÇME (Komple Yenilendi) ---
+        /* YENİ: updateClock fonksiyonu kaldırıldı */
+        /*
+        // --- SAAT GÜNCELLEME ---
+        function updateClock() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const date = now.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            systemClock.textContent = `SİSTEM SAATİ: ${time} ${date}`;
+        }
+        */
+
+        // --- CİHAZ SEÇME ---
         function selectDevice(id) {
             const targetId = id || 'kinali';
             const targetData = targets[targetId];
@@ -409,62 +579,75 @@
             if (!targetData) return;
 
             // 1. Tüm seçimleri temizle
-            mapMarkers.forEach(marker => marker.classList.remove('selected'));
+            mapMarkers.forEach(marker => {
+                marker.classList.remove('selected');
+                const iconBg = marker.querySelector('.icon-bg');
+                if (iconBg) iconBg.style.animation = 'pulse-off 1.5s infinite'; // Varsayılan animasyon
+            });
             targetButtons.forEach(button => button.classList.remove('selected'));
 
             // 2. İlgili olanı seç
             if (targetData.markerId) {
-                document.getElementById(targetData.markerId).classList.add('selected');
+                const marker = document.getElementById(targetData.markerId);
+                marker.classList.add('selected');
+                const iconBg = marker.querySelector('.icon-bg');
+                if (iconBg) iconBg.style.animation = ''; // Marker-pulse halledecek
             }
             document.getElementById(`${targetId}-button`).classList.add('selected');
 
-            // 3. Telemetri panelini güncelle
+            // 3. Telemetri ve diğer HUD panellerini güncelle
             document.getElementById('telemetry-name').textContent = targetData.name;
             document.getElementById('telemetry-location').textContent = targetData.location;
             document.getElementById('telemetry-coords').textContent = targetData.coords;
             const statusEl = document.getElementById('telemetry-status');
             statusEl.textContent = targetData.status;
-            statusEl.className = targetData.statusClass; // Renk için
+            statusEl.className = targetData.statusClass;
             telemetryPanel.classList.add('visible');
+            
+            currentGpsCoords.textContent = `GPS: ${targetData.currentGps}`; // Alt orta GPS HUD'u
 
-            // 4. Haritayı hedefe kaydır
+            // 4. Radar Taramasını Yönet
+            if (targetId === 'kinali') {
+                sweepContainer.style.opacity = '0.7'; // Radarı göster
+                radarPulseEffect.style.animation = 'radar-pulse 2s infinite ease-out'; // Radar dalgasını başlat
+                systemStatusText.textContent = "Bağlantı: Stabil | Mod: Tarama";
+            } else {
+                sweepContainer.style.opacity = '0'; // Radarı gizle
+                radarPulseEffect.style.animation = 'none'; // Radar dalgasını durdur
+                systemStatusText.textContent = "Bağlantı: Stabil | Mod: Takip";
+            }
+
+            // 5. Haritayı hedefe kaydır
             currentPanX = targetData.panX;
             currentPanY = targetData.panY;
             updateMapTransform();
         }
 
-        // --- YENİ: Harita Transform Güncelleme Fonksiyonu ---
+        // --- Harita Transform Güncelleme Fonksiyonu ---
         function updateMapTransform() {
-            // Haritayı kaydırmak için translate kullan (değerler ters olmalı)
-            // 5% sola kaydırmak için (panX = 5), translate -5%
             const newTranslateX = -currentPanX;
             const newTranslateY = -currentPanY;
             mapContainer.style.transform = `translate(${newTranslateX}%, ${newTranslateY}%) scale(${currentZoom})`;
         }
 
-        // --- GÜNCELLENDİ: ZOOM Fonksiyonları ---
+        // --- ZOOM Fonksiyonları ---
         document.getElementById('zoom-in').onclick = () => {
             currentZoom = Math.min(currentZoom * 1.4, 3.0);
             updateMapTransform();
         };
         document.getElementById('zoom-out').onclick = () => {
-            currentZoom = Math.max(currentZoom / 1.4, 0.5); // 1.0 -> 0.5 olarak min zoom değiştirildi
+            currentZoom = Math.max(currentZoom / 1.4, 0.5);
             updateMapTransform();
         };
 
-        // --- YENİ: Tarama Butonu Fonksiyonu ---
+        // --- Tarama Butonu Fonksiyonu ---
         document.getElementById('scan-button').onclick = () => {
-            // Basit bir animasyon: Tüm markerları "pulse" et
             mapMarkers.forEach(marker => {
-                marker.classList.add('selected');
+                marker.classList.add('selected'); // Geçici seçili gibi göster
                 setTimeout(() => marker.classList.remove('selected'), 1500);
             });
-            // Hedef seçimini kaldır
-            selectDevice(null);
+            selectDevice(null); // Kınalı'yı (tarama modunu) seç
         };
-
-        // Gerek kalmadı ama hata vermesin diye boş fonksiyon
-        function updateTimestamps() {}
 
     </script>
 </body>
