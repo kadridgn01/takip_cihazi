@@ -2,7 +2,6 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <!-- Tam ekran, zoom yapılamaz, uygulama hissi verir -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
     <title>Sinyal Takip</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -190,19 +189,31 @@
             z-index: 30;
             transition: transform 0.3s ease-out;
             transform: translateY(calc(100% - 250px)); /* Başlangıç pozisyonu */
+            
+            /* DÜZELTME: Paneli flex column yaptım */
+            display: flex;
+            flex-direction: column;
         }
         .bottom-sheet.full {
             transform: translateY(calc(100% - 90%)); /* Ekranın %90'ını kapla */
         }
-        .sheet-handle { padding: 12px; cursor: grab; }
+        .sheet-handle { padding: 12px; cursor: grab; flex-shrink: 0; }
         .sheet-handle:active { cursor: grabbing; }
         .sheet-handle-bar { width: 48px; height: 6px; background-color: #6b7280; border-radius: 3px; margin: 0 auto; }
+        
+        .sheet-header {
+            padding: 0 20px 16px 20px; /* px-5 pt-2 pb-4 */
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .sheet-content {
-            /* --- DÜZELTME BURADA --- */
-            height: calc(100% - 112px); /* Başlık+Handle için yer ayır */
+            /* DÜZELTME: Yükseklik kaldırıldı, esneme eklendi */
+            flex-grow: 1; /* Handle, header ve tab bar arasındaki tüm alanı doldurur */
             overflow-y: auto;
-            padding-bottom: 80px; /* Alttaki Tab Bar yüksekliği kadar boşluk */
-            /* ----------------------- */
+            /* padding-bottom: 80px; Artık gerek yok */
         }
 
         /* Cihaz Listesi */
@@ -222,13 +233,10 @@
         
         /* ALT TAB BAR */
         .tab-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            flex-shrink: 0;
+            /* DÜZELTME: position:absolute kaldırıldı */
+            flex-shrink: 0; /* Küçülmesini engelle */
             display: flex;
-            justify-content: around;
+            justify-content: space-around;
             align-items: center;
             height: 80px; /* h-20 */
             background-color: rgba(17, 24, 39, 0.8); /* bg-gray-900/80 */
@@ -240,12 +248,10 @@
 </head>
 <body class="bg-gray-900 h-screen overflow-hidden text-white">
 
-    <!-- 0. BAŞLANGIÇ EKRANI (YENİ) -->
     <div id="splash-screen">
         <h1 class="text-4xl font-bold text-white mb-4">Sinyal Takip</h1>
         <p class="text-lg text-gray-400 mb-12">Hedef cihazları bulmak için taramayı başlatın.</p>
         <button onclick="startSearch()" class="bg-blue-600 text-white rounded-full w-40 h-40 flex items-center justify-center shadow-lg transition-all transform hover:scale-105 active:scale-95">
-            <!-- DÜZELTİLMİŞ İKON (Sinyal/Radar) -->
             <svg class="splash-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.33 15.33a8.025 8.025 0 0 1-8.66 0M17.48 12.9a11.03 11.03 0 0 0-10.96 0M19.6 10.4a13.98 13.98 0 0 0-15.2 0M12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"></path>
             </svg>
@@ -253,24 +259,19 @@
         <span class="mt-6 text-lg font-medium text-white">Taramayı Başlat</span>
     </div>
 
-    <!-- 1. YÜKLENİYOR EKRANI (Gizli) -->
     <div id="loading-screen">
         <div class="loader"></div>
         <h1 class="text-2xl font-semibold text-gray-300">Cihazlar Aranıyor...</h1>
         <p class="text-lg text-gray-500">Kınalı, hedefleri buluyor...</p>
     </div>
 
-    <!-- 2. ANA UYGULAMA (Gizli) -->
     <div id="main-app" class="relative h-full w-full max-w-lg mx-auto">
 
-        <!-- HARİTA İÇERİĞİ (Zoom/Pan için) -->
         <div id="map-container" style="transform-origin: center center;">
-            <!-- GÜNCELLENMİŞ HARİTA -->
             <div class="fake-map">
                 <div class="river"></div>
                 <div class="road1"></div>
                 <div class="road2"></div>
-                <!-- Rize - Harita Etiketleri -->
                 <span class="map-label" style="transform: rotate(-10deg) translateX(-20px); top: 58%; left: 50%;">
                     Fırtına Deresi
                 </span>
@@ -285,16 +286,13 @@
                 </span>
             </div>
 
-            <!-- HEDEFLER -->
             <div id="marker-container" class="absolute inset-0 z-20">
-                <!-- HEDEF: MEHMET (Takip Cihazı) -->
                 <div id="mehmet-marker" class="map-marker" style="top: 35%; left: 45%;" onclick="selectDevice('mehmet')">
                     <span class="label">Hedef: Mehmet</span>
                     <div class="icon-bg bg-red-600">
                         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-2a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-4a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd" /></svg>
                     </div>
                 </div>
-                <!-- HEDEF: AZİL (Takip Cihazı) - Neredeyse aynı yer -->
                 <div id="azil-marker" class="map-marker" style="top: 40%; left: 50%;" onclick="selectDevice('azil')">
                     <span class="label">Hedef: Azil</span>
                     <div class="icon-bg bg-blue-600">
@@ -304,29 +302,25 @@
             </div>
         </div>
         
-        <!-- HARİTA KONTROLLERİ (ZOOM) -->
         <div class="map-controls">
             <button id="zoom-in" aria-label="Yakınlaştır">+</button>
             <button id="zoom-out" aria-label="Uzaklaştır">-</button>
         </div>
 
 
-        <!-- 3. Alt Panel (Sürüklenebilir) -->
         <div id="bottom-sheet" class="bottom-sheet">
             
             <div id="pan-detector" class="sheet-handle">
                 <div class="sheet-handle-bar"></div>
             </div>
 
-            <div class="px-5 pt-2 pb-4 flex justify-between items-center" style="flex-shrink: 0;">
+            <div class="sheet-header">
                 <h2 class="text-2xl font-bold text-white">Aygıtlar</h2>
                 <button class="w-8 h-8 bg-gray-600 rounded-full text-white text-2xl font-light flex items-center justify-center">+</button>
             </div>
 
-            <!-- DÜZELTİLMİŞ LİSTE YAPISI -->
             <div class="sheet-content">
                 <ul>
-                    <!-- HEDEF 1: AZİL -->
                     <li id="azil-item" class="list-item" onclick="selectDevice('azil')">
                         <div class="list-item-icon bg-blue-600">
                             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-2a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-4a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd" /></svg>
@@ -338,7 +332,6 @@
                         <div class="list-item-status timestamp">Şimdi</div>
                     </li>
 
-                    <!-- HEDEF 2: MEHMET -->
                     <li id="mehmet-item" class="list-item" onclick="selectDevice('mehmet')">
                         <div class="list-item-icon bg-red-600">
                              <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-2a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-4a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd" /></svg>
@@ -350,7 +343,6 @@
                         <div class="list-item-status timestamp">Şimdi</div>
                     </li>
 
-                    <!-- Diğer Cihaz (Kınalı'nın) -->
                     <li id="kinali-item" class="list-item" onclick="selectDevice(null)">
                         <div class="list-item-icon bg-gray-600">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h4a2 2 0 002-2V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
@@ -363,14 +355,12 @@
                 </ul>
             </div>
 
-            <!-- Alt Tab Bar -->
             <div class="tab-bar">
                 <div class="text-center text-gray-400">
                     <svg class="w-6 h-6 mx-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
                     <span class="text-xs">Kişiler</span>
                 </div>
-                <div class="text-center text-blue-500"> <!-- Aktif Sekme -->
-                    <svg class="w-6 h-6 mx-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V5a1 1 0 00-1.447-.894l-4 2A1 1 0 0011 7v10zM4 17a1 1 0 001.447.894l4-2A1 1 0 0010 15V5a1 1 0 00-1.447-.894l-4 2A1 1 0 004 7v10z"></path></svg>
+                <div class="text-center text-blue-500"> <svg class="w-6 h-6 mx-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V5a1 1 0 00-1.447-.894l-4 2A1 1 0 0011 7v10zM4 17a1 1 0 001.447.894l4-2A1 1 0 0010 15V5a1 1 0 00-1.447-.894l-4 2A1 1 0 004 7v10z"></path></svg>
                     <span class="text-xs font-semibold">Aygıtlar</span>
                 </div>
                 <div class="text-center text-gray-400">
@@ -485,7 +475,7 @@
             listItems.forEach(item => item.classList.remove('selected', 'bg-blue-600'));
             mapMarkers.forEach(marker => marker.classList.remove('selected', 'animate-pulse', 'scale-125'));
 
-            if (!id) {
+            if (!id) { // 'Kınalı'nın telefonu gibi haritada olmayan bir şeye tıklandı
                 snapTo('partial');
                 return;
             }
