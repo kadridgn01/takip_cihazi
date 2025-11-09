@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
     <title>Sinyal Takip</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA ve Mobil Cihaz Meta Etiketleri --><link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d121c">
+    
+    <!-- Apple iOS için Ana Ekran Ayarları --><meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sinyal Takip">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/3b82f6/ffffff?text=ST">
+    <!-- Bitiş: PWA ve Mobil Cihaz Meta Etiketleri --><script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Modern reset ve temel stiller */
         html, body {
@@ -288,10 +296,11 @@
         /* Telemetri Paneli (Sol Alt) */
         #telemetry-panel {
             position: absolute;
-            bottom: 90px; /* YENİ: 20px'den 90px'e yükseltildi */
+            bottom: 130px; /* YENİ: GPS HUD'u için yer açıldı */
             left: 15px;
             z-index: 50;
-            width: 250px;
+            width: calc(100% - 30px); /* YENİ: Esnek genişlik */
+            max-width: 300px; /* Maksimum genişlik sınırlaması */
             background-color: rgba(13, 18, 28, 0.7);
             backdrop-filter: blur(8px);
             border-radius: 8px;
@@ -330,55 +339,51 @@
         .status-offline { color: #f87171; text-shadow: 0 0 5px rgba(248, 113, 113, 0.7); }
         .status-self { color: #60a5fa; text-shadow: 0 0 5px rgba(96, 165, 250, 0.7); }
 
-        /* Hedef Seçici (Sağ Alt) */
-        #target-switcher {
-            position: absolute;
-            bottom: 90px; /* YENİ: 20px'den 90px'e yükseltildi */
-            right: 15px;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .target-button {
-            width: 48px; height: 48px;
-            background-color: rgba(31, 41, 55, 0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 50%;
-            color: #e0f2fe;
-            font-weight: 600;
-            font-size: 1.1rem;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-            transition: all 0.2s ease;
-        }
-        .target-button:active {
-            transform: scale(0.9);
-            background-color: rgba(31, 41, 55, 0.9);
-        }
-        .target-button.selected {
-            background-color: #3b82f6;
-            border-color: #e0f2fe;
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
-        }
+        /* Hedef Seçici (Sağ Alt) - KALDIRILDI */
+        /* #target-switcher {
+            display: none;
+        } */
 
-        /* YENİ: Sağ Üst ve Alt Orta HUD Panelleri */
+        /* Sistem Durum HUD'u (Sol Üst) */
         #system-status-hud {
             top: calc(env(safe-area-inset-top, 0px) + 15px);
             left: 15px;
+            min-width: 180px; /* Minimum genişlik */
+            text-align: left;
         }
+        #system-status-hud .mode-toggle {
+            cursor: pointer;
+            color: #a5f3fc;
+            font-weight: 700;
+            margin-top: 5px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            transition: all 0.2s ease;
+            display: inline-block; /* Sadece metin kadar yer kaplar */
+            text-shadow: none;
+        }
+        #system-status-hud .mode-toggle:active {
+            background-color: rgba(59, 130, 246, 0.3);
+            transform: translateY(1px);
+        }
+
+        /* GPS Koordinat HUD'u (Alt Orta) */
         #gps-coords-hud {
             position: absolute;
-            bottom: 90px; /* YENİ: 20px'den 90px'e yükseltildi */
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 90px; /* YENİ: Telemetry panelinin altına yerleştirildi */
+            left: 15px; /* YENİ: Sola hizalandı */
+            right: 15px; /* YENİ: Sağa hizalandı */
+            transform: none; /* YENİ: translateX kaldırıldı */
             z-index: 50;
-            white-space: nowrap; /* Tek satırda kalır */
+            white-space: nowrap; 
+            overflow: hidden; /* Taşmayı engelle */
+            text-overflow: ellipsis; /* Taşarsa üç nokta göster */
             padding: 8px 12px;
+            text-align: center; /* Metni ortala */
         }
-        #gps-coords-hud .title { display: none; } /* GPS koordinatında başlığa gerek yok */
+        #gps-coords-hud .title { display: none; }
 
 
         /* GLITCH EFEKTLERİ (İsteğe bağlı, daha gelişmiş bir görünüm için) */
@@ -429,8 +434,8 @@
             </div>
 
             <!-- Dönen Radar Taraması (Haritanın üstünde) --><div id="radar-sweep-container">
-                <div id="radar-grid-lines"></div> <!-- YENİ: Yorum kaldırıldı -->
-                <div id="radar-sweep"></div> <!-- YENİ: Yorum kaldırıldı -->
+                <div id="radar-grid-lines"></div>
+                <div id="radar-sweep"></div>
                 <div id="radar-pulse-effect"></div>
             </div>
 
@@ -450,11 +455,10 @@
             </div>
         </div>
         
-        <!-- YENİ: Sistem Durum HUD'u (Sol Üst) --><div id="system-status-hud" class="hud-panel">
+        <!-- Sistem Durum HUD'u (Sol Üst) --><div id="system-status-hud" class="hud-panel">
             <div class="title">SİSTEM DURUMU</div>
-            <!-- <span id="system-clock"></span> --> <!-- YENİ: Saat kaldırıldı -->
             <span id="system-status-text">Bağlantı: Stabil</span>
-        </div>
+            <span id="mode-toggle" class="mode-toggle" onclick="toggleTrackingMode()">Mod: Tarama</span> <!-- YENİ: Toggle butonu --></div>
 
         <!-- Harita Kontrolleri (Zoom) --><div class="map-controls">
             <button id="zoom-in" aria-label="Yakınlaştır">+</button>
@@ -468,16 +472,15 @@
             <p id="telemetry-status"></p>
         </div>
 
-        <!-- YENİ: GPS Koordinat HUD'u (Alt Orta) --><div id="gps-coords-hud" class="hud-panel">
+        <!-- GPS Koordinat HUD'u (Alt Orta) --><div id="gps-coords-hud" class="hud-panel">
             <span id="current-gps-coords">GPS: 40.910° N, 41.078° E</span>
         </div>
 
-        <!-- Hedef Seçici (Sağ Alt) --><div id="target-switcher">
+        <!-- Hedef Seçici (Sağ Alt) - KALDIRILDI --><!-- <div id="target-switcher">
             <button id="azil-button" class="target-button" onclick="selectDevice('azil')">A</button>
             <button id="mehmet-button" class="target-button" onclick="selectDevice('mehmet')">M</button>
             <button id="kinali-button" class="target-button" onclick="selectDevice(null)">K</button>
-        </div>
-    </div>
+        </div> --></div>
 
     <script>
         // --- DEĞİŞKENLER ---
@@ -487,14 +490,14 @@
         const mapContainer = document.getElementById('map-container');
         const telemetryPanel = document.getElementById('telemetry-panel');
         const sweepContainer = document.getElementById('radar-sweep-container');
-        const radarPulseEffect = document.getElementById('radar-pulse-effect'); // Yeni
+        const radarPulseEffect = document.getElementById('radar-pulse-effect');
         
         const mapMarkers = document.querySelectorAll('.map-marker');
-        const targetButtons = document.querySelectorAll('.target-button');
+        // const targetButtons = document.querySelectorAll('.target-button'); // KALDIRILDI
         
         // HUD elemanları
-        /* const systemClock = document.getElementById('system-clock'); */ // YENİ: Kaldırıldı
         const systemStatusText = document.getElementById('system-status-text');
+        const modeToggle = document.getElementById('mode-toggle'); // YENİ
         const currentGpsCoords = document.getElementById('current-gps-coords');
 
         // --- Hedef Veri Bankası ---
@@ -508,7 +511,7 @@
                 panX: 0, 
                 panY: -10,
                 markerId: 'azil-marker',
-                currentGps: '40.912° N, 41.081° E' // Anlık GPS için
+                currentGps: '40.912° N, 41.081° E'
             },
             'mehmet': { 
                 name: 'HEDEF: MEHMET', 
@@ -522,14 +525,14 @@
                 currentGps: '40.905° N, 41.075° E'
             },
             'kinali': { 
-                name: "TARAMA MODU", /* YENİ: Değiştirildi */
-                location: 'KONUM: MERKEZ', /* YENİ: Değiştirildi */
-                coords: 'GPS: SİSTEM AKTİF', /* YENİ: Değiştirildi */
+                name: "TARAMA MODU", 
+                location: 'KONUM: MERKEZ', 
+                coords: 'GPS: SİSTEM AKTİF', 
                 status: 'DURUM: AKTİF TARAMA',
                 statusClass: 'status-self',
                 panX: 0,
                 panY: 0,
-                markerId: null, // Kınalı'nın marker'ı yok
+                markerId: null,
                 currentGps: '40.910° N, 41.078° E'
             }
         };
@@ -538,7 +541,10 @@
         let currentZoom = 1.0;
         let currentPanX = 0;
         let currentPanY = 0;
-        
+        let currentTargetId = null; // YENİ: Aktif hedefi tutar
+        let trackingMode = false; // YENİ: Tarama (false) veya Takip (true) modunu belirler
+        let trackingInterval; // YENİ: Hedefler arasında otomatik geçiş için
+
         // --- UYGULAMA BAŞLANGICI ---
         function startSearch() {
             splashScreen.style.opacity = '0';
@@ -553,47 +559,82 @@
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                     mainApp.style.opacity = '1';
-                    /* updateClock(); // Saati başlat */ // YENİ: Kaldırıldı
-                    /* setInterval(updateClock, 1000); // Her saniye güncelle */ // YENİ: Kaldırıldı
-                    selectDevice(null); // Başlangıçta Kınalı'yı seç (tarama modunda)
+                    setTrackingMode(false); // Başlangıçta tarama modunu seç
+                    telemetryPanel.classList.add('visible'); // Telemetri panelini görünür yap
                 }, 500);
             }, 2500);
         }
         
-        /* YENİ: updateClock fonksiyonu kaldırıldı */
-        /*
-        // --- SAAT GÜNCELLEME ---
-        function updateClock() {
-            const now = new Date();
-            const time = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const date = now.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            systemClock.textContent = `SİSTEM SAATİ: ${time} ${date}`;
+        // --- TAKİP MODU AÇMA/KAPAMA ---
+        function toggleTrackingMode() {
+            setTrackingMode(!trackingMode);
         }
-        */
+
+        function setTrackingMode(mode) {
+            trackingMode = mode;
+            if (trackingMode) {
+                // Takip Modu: Hedefler arasında otomatik geçiş yap
+                modeToggle.textContent = 'Mod: Takip';
+                startTrackingTargets();
+            } else {
+                // Tarama Modu: Kınalı'yı seç (genel tarama görünümü)
+                modeToggle.textContent = 'Mod: Tarama';
+                stopTrackingTargets();
+                selectDevice('kinali');
+            }
+        }
+
+        function startTrackingTargets() {
+            // Tarama modundaysa veya henüz bir hedef seçili değilse ilk hedefe geç
+            if (currentTargetId === 'kinali' || currentTargetId === null) {
+                selectDevice('mehmet');
+            }
+
+            // Eğer zaten bir interval varsa temizle
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+            }
+
+            trackingInterval = setInterval(() => {
+                let nextTargetId;
+                if (currentTargetId === 'mehmet') {
+                    nextTargetId = 'azil';
+                } else {
+                    nextTargetId = 'mehmet';
+                }
+                selectDevice(nextTargetId);
+            }, 3000); // Her 3 saniyede bir hedefi değiştir
+        }
+
+        function stopTrackingTargets() {
+            clearInterval(trackingInterval);
+            trackingInterval = null;
+        }
+
 
         // --- CİHAZ SEÇME ---
         function selectDevice(id) {
-            const targetId = id || 'kinali';
+            const targetId = id;
             const targetData = targets[targetId];
 
-            if (!targetData) return;
+            if (!targetData) return; // Geçersiz hedef ID'si kontrolü
+
+            currentTargetId = targetId; // Aktif hedefi kaydet
 
             // 1. Tüm seçimleri temizle
             mapMarkers.forEach(marker => {
                 marker.classList.remove('selected');
                 const iconBg = marker.querySelector('.icon-bg');
-                if (iconBg) iconBg.style.animation = 'pulse-off 1.5s infinite'; // Varsayılan animasyon
+                if (iconBg) iconBg.style.animation = 'pulse-off 1.5s infinite';
             });
-            targetButtons.forEach(button => button.classList.remove('selected'));
 
             // 2. İlgili olanı seç
             if (targetData.markerId) {
                 const marker = document.getElementById(targetData.markerId);
                 marker.classList.add('selected');
                 const iconBg = marker.querySelector('.icon-bg');
-                if (iconBg) iconBg.style.animation = ''; // Marker-pulse halledecek
+                if (iconBg) iconBg.style.animation = '';
             }
-            document.getElementById(`${targetId}-button`).classList.add('selected');
 
             // 3. Telemetri ve diğer HUD panellerini güncelle
             document.getElementById('telemetry-name').textContent = targetData.name;
@@ -602,7 +643,6 @@
             const statusEl = document.getElementById('telemetry-status');
             statusEl.textContent = targetData.status;
             statusEl.className = targetData.statusClass;
-            telemetryPanel.classList.add('visible');
             
             currentGpsCoords.textContent = `GPS: ${targetData.currentGps}`; // Alt orta GPS HUD'u
 
@@ -611,10 +651,12 @@
                 sweepContainer.style.opacity = '0.7'; // Radarı göster
                 radarPulseEffect.style.animation = 'radar-pulse 2s infinite ease-out'; // Radar dalgasını başlat
                 systemStatusText.textContent = "Bağlantı: Stabil | Mod: Tarama";
+                modeToggle.textContent = 'Mod: Tarama'; // Toggle durumunu güncelle
             } else {
                 sweepContainer.style.opacity = '0'; // Radarı gizle
                 radarPulseEffect.style.animation = 'none'; // Radar dalgasını durdur
                 systemStatusText.textContent = "Bağlantı: Stabil | Mod: Takip";
+                modeToggle.textContent = 'Mod: Takip'; // Toggle durumunu güncelle
             }
 
             // 5. Haritayı hedefe kaydır
@@ -640,15 +682,19 @@
             updateMapTransform();
         };
 
-        // --- Tarama Butonu Fonksiyonu ---
-        document.getElementById('scan-button').onclick = () => {
-            mapMarkers.forEach(marker => {
-                marker.classList.add('selected'); // Geçici seçili gibi göster
-                setTimeout(() => marker.classList.remove('selected'), 1500);
+        // --- Service Worker Kaydı ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('Service Worker başarıyla kaydedildi: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker kaydı başarısız: ', error);
+                    });
             });
-            selectDevice(null); // Kınalı'yı (tarama modunu) seç
-        };
-
+        }
+        
     </script>
 </body>
 </html>
