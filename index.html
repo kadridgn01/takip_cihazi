@@ -13,25 +13,55 @@
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1a2b4a; /* Koyu harita rengi */
+            background-color: #0c1a2d; /* YENİ: Koyu Mavi Harita Rengi */
         }
         /* iOS Home Bar alanı için alt boşluk */
         body {
             padding-bottom: env(safe-area-inset-bottom);
         }
         
+        /* --- YENİ: BAŞLANGIÇ EKRANI --- */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background-color: #111827; /* Koyu gri */
+            z-index: 101;
+            display: flex; /* Varsayılan olarak görünür */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            transition: opacity 0.5s ease-out;
+        }
+        #splash-screen button {
+            transition: all 0.2s ease;
+        }
+        #splash-screen button:active {
+            transform: scale(0.95);
+            background-color: #1d4ed8;
+        }
+        /* YENİ: Başlangıç butonu ikonu */
+        .splash-icon {
+            width: 80px;
+            height: 80px;
+            color: white;
+            animation: pulse-on 2s infinite;
+        }
+
         /* --- YÜKLENİYOR EKRANI --- */
         #loading-screen {
             position: fixed;
             inset: 0;
             background-color: #111827; /* Koyu gri */
             z-index: 100;
-            display: flex;
+            display: none; /* Başlangıçta gizli */
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 20px;
-            transition: opacity 0.5s ease-out;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
         }
         .loader {
             width: 60px;
@@ -47,33 +77,39 @@
 
         /* --- ANA UYGULAMA (Başta gizli) --- */
         #main-app {
-            display: none;
+            display: none; /* Başlangıçta gizli */
             opacity: 0;
             transition: opacity 0.5s ease-in;
         }
 
-        /* --- SAHTE HARİTA STİLLERİ --- */
+        /* --- SAHTE HARİTA STİLLERİ (GÜNCELLENDİ) --- */
         .fake-map {
-            background-color: #1a2b4a; /* Koyu mavi/siyah harita */
+            background-color: #0c1a2d; /* Koyu mavi/siyah harita */
             position: absolute;
             inset: 0;
             overflow: hidden;
         }
         /* Rize - Sahte Dere */
-        .fake-map::before {
-            content: ''; position: absolute; top: 60%; left: -10%;
-            width: 120%; height: 15px; background-color: #1d4ed8;
-            opacity: 0.6; transform: rotate(-10deg); z-index: 1;
+        .fake-map .river {
+            position: absolute; top: 60%; left: -10%;
+            width: 120%; height: 15px; background-color: #0a1421; /* Koyu Su */
+            transform: rotate(-10deg); z-index: 1;
         }
         /* Rize - Sahte Dağ Yolu */
-        .fake-map::after {
-            content: ''; position: absolute; top: 20%; left: 50%;
-            width: 2px; height: 70%; background-color: #4b5563;
-            opacity: 0.4; transform: rotate(25deg);
+        .fake-map .road1 {
+            position: absolute; top: 20%; left: 50%;
+            width: 2px; height: 70%; background-color: #2a3a4d; /* Koyu Yol */
+            opacity: 0.8; transform: rotate(25deg);
+        }
+        .fake-map .road2 {
+            position: absolute; top: 40%; left: 10%;
+            width: 1px; height: 30%; background-color: #2a3a4d;
+            opacity: 0.6; transform: rotate(5deg);
         }
         .map-label {
-            position: absolute; color: #6b7280; font-weight: 600;
-            font-size: 0.8rem; z-index: 10; text-shadow: 0 0 5px #000;
+            position: absolute; color: #4b5563; /* Soluk gri */
+            font-weight: 600; font-size: 0.8rem; z-index: 10;
+            text-shadow: 0 0 5px #000;
         }
         /* Harita içeriği (Zoom için) */
         #map-container {
@@ -93,7 +129,6 @@
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
             border: 3px solid rgba(255, 255, 255, 0.3);
-            /* Seçilince parlama animasyonu */
             animation: pulse-off 1.5s infinite;
         }
         .map-marker .label {
@@ -162,7 +197,13 @@
         .sheet-handle { padding: 12px; cursor: grab; }
         .sheet-handle:active { cursor: grabbing; }
         .sheet-handle-bar { width: 48px; height: 6px; background-color: #6b7280; border-radius: 3px; margin: 0 auto; }
-        .sheet-content { height: calc(100% - 112px); overflow-y: auto; }
+        .sheet-content {
+            /* --- DÜZELTME BURADA --- */
+            height: calc(100% - 112px); /* Başlık+Handle için yer ayır */
+            overflow-y: auto;
+            padding-bottom: 80px; /* Alttaki Tab Bar yüksekliği kadar boşluk */
+            /* ----------------------- */
+        }
 
         /* Cihaz Listesi */
         .list-item {
@@ -178,32 +219,69 @@
         .list-item.selected .list-item-location,
         .list-item.selected .list-item-status { color: #e0e7ff; }
         .timestamp.live { color: #26a69a; } /* Canlı (Yeşil) */
+        
+        /* ALT TAB BAR */
+        .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: around;
+            align-items: center;
+            height: 80px; /* h-20 */
+            background-color: rgba(17, 24, 39, 0.8); /* bg-gray-900/80 */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid #374151; /* border-gray-700 */
+        }
     </style>
 </head>
 <body class="bg-gray-900 h-screen overflow-hidden text-white">
 
-    <!-- 1. YÜKLENİYOR EKRANI (Başta bu görünür) -->
+    <!-- 0. BAŞLANGIÇ EKRANI (YENİ) -->
+    <div id="splash-screen">
+        <h1 class="text-4xl font-bold text-white mb-4">Sinyal Takip</h1>
+        <p class="text-lg text-gray-400 mb-12">Hedef cihazları bulmak için taramayı başlatın.</p>
+        <button onclick="startSearch()" class="bg-blue-600 text-white rounded-full w-40 h-40 flex items-center justify-center shadow-lg transition-all transform hover:scale-105 active:scale-95">
+            <!-- DÜZELTİLMİŞ İKON (Sinyal/Radar) -->
+            <svg class="splash-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.33 15.33a8.025 8.025 0 0 1-8.66 0M17.48 12.9a11.03 11.03 0 0 0-10.96 0M19.6 10.4a13.98 13.98 0 0 0-15.2 0M12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"></path>
+            </svg>
+        </button>
+        <span class="mt-6 text-lg font-medium text-white">Taramayı Başlat</span>
+    </div>
+
+    <!-- 1. YÜKLENİYOR EKRANI (Gizli) -->
     <div id="loading-screen">
         <div class="loader"></div>
         <h1 class="text-2xl font-semibold text-gray-300">Cihazlar Aranıyor...</h1>
         <p class="text-lg text-gray-500">Kınalı, hedefleri buluyor...</p>
     </div>
 
-    <!-- 2. ANA UYGULAMA (Başta gizli) -->
+    <!-- 2. ANA UYGULAMA (Gizli) -->
     <div id="main-app" class="relative h-full w-full max-w-lg mx-auto">
 
         <!-- HARİTA İÇERİĞİ (Zoom/Pan için) -->
         <div id="map-container" style="transform-origin: center center;">
+            <!-- GÜNCELLENMİŞ HARİTA -->
             <div class="fake-map">
+                <div class="river"></div>
+                <div class="road1"></div>
+                <div class="road2"></div>
                 <!-- Rize - Harita Etiketleri -->
                 <span class="map-label" style="transform: rotate(-10deg) translateX(-20px); top: 58%; left: 50%;">
-                    Kokasor Deresi
+                    Fırtına Deresi
                 </span>
                 <span class="map-label" style="transform: rotate(10deg); top: 25%; right: 10%;">
                     Başköy Küme Evleri
                 </span>
                 <span class="map-label" style="transform: rotate(25deg); top: 30%; left: 55%;">
                     Kaçkar Yolu
+                </span>
+                <span class="map-label" style="transform: rotate(5deg); top: 45%; left: 15%;">
+                    Çamlıhemşin Yolu
                 </span>
             </div>
 
@@ -213,7 +291,6 @@
                 <div id="mehmet-marker" class="map-marker" style="top: 35%; left: 45%;" onclick="selectDevice('mehmet')">
                     <span class="label">Hedef: Mehmet</span>
                     <div class="icon-bg bg-red-600">
-                        <!-- Takip Cihazı İkonu (SVG) -->
                         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-2a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-4a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd" /></svg>
                     </div>
                 </div>
@@ -221,7 +298,6 @@
                 <div id="azil-marker" class="map-marker" style="top: 40%; left: 50%;" onclick="selectDevice('azil')">
                     <span class="label">Hedef: Azil</span>
                     <div class="icon-bg bg-blue-600">
-                        <!-- Takip Cihazı İkonu (SVG) -->
                         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-2a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-4a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd" /></svg>
                     </div>
                 </div>
@@ -242,11 +318,12 @@
                 <div class="sheet-handle-bar"></div>
             </div>
 
-            <div class="px-5 pt-2 pb-4 flex justify-between items-center">
+            <div class="px-5 pt-2 pb-4 flex justify-between items-center" style="flex-shrink: 0;">
                 <h2 class="text-2xl font-bold text-white">Aygıtlar</h2>
                 <button class="w-8 h-8 bg-gray-600 rounded-full text-white text-2xl font-light flex items-center justify-center">+</button>
             </div>
 
+            <!-- DÜZELTİLMİŞ LİSTE YAPISI -->
             <div class="sheet-content">
                 <ul>
                     <!-- HEDEF 1: AZİL -->
@@ -287,7 +364,7 @@
             </div>
 
             <!-- Alt Tab Bar -->
-            <div class="absolute bottom-0 left-0 right-0 flex-shrink-0 flex justify-around items-center h-20 bg-gray-900 bg-opacity-80 backdrop-blur-md border-t border-gray-700">
+            <div class="tab-bar">
                 <div class="text-center text-gray-400">
                     <svg class="w-6 h-6 mx-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
                     <span class="text-xs">Kişiler</span>
@@ -310,6 +387,7 @@
 
     <script>
         // --- DEĞİŞKENLER ---
+        const splashScreen = document.getElementById('splash-screen');
         const loadingScreen = document.getElementById('loading-screen');
         const mainApp = document.getElementById('main-app');
         const bottomSheet = document.getElementById('bottom-sheet');
@@ -328,13 +406,25 @@
         let startY = 0;
         let startTop = 0;
 
-        // --- UYGULAMA BAŞLANGICI ---
-        window.onload = () => {
-            // "Aranıyor..." ekranını 2.5 saniye göster
+        // --- UYGULAMA BAŞLANGICI (Butonla) ---
+        function startSearch() {
+            // 1. Başlangıç ekranını gizle
+            splashScreen.style.opacity = '0';
             setTimeout(() => {
+                splashScreen.style.display = 'none';
+            }, 500);
+
+            // 2. "Aranıyor..." ekranını göster
+            loadingScreen.style.display = 'flex';
+            setTimeout(() => { loadingScreen.style.opacity = '1'; }, 10); // Kısa bir gecikme
+            
+            // 3. Kurgusal arama süresi (2.5 saniye)
+            setTimeout(() => {
+                // 4. Arama ekranını gizle
                 loadingScreen.style.opacity = '0';
+                
+                // 5. Ana uygulamayı göster
                 mainApp.style.display = 'block';
-                // Ana uygulama yavaşça belirsin
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                     mainApp.style.opacity = '1';
@@ -342,8 +432,8 @@
                 
                 // Başlangıçta Azil'i seçili yap
                 selectDevice('azil');
-            }, 2500); // 2.5 saniye kurgusal arama süresi
-        };
+            }, 2500);
+        }
         
         // --- SÜRÜKLEME (PAN) FONKSİYONLARI ---
         panDetector.addEventListener('touchstart', (e) => {
@@ -425,7 +515,7 @@
         }
         setInterval(updateTimestamps, 5000);
 
-        // --- YENİ: ZOOM FONKSİYONLARI ---
+        // --- ZOOM FONKSİYONLARI ---
         document.getElementById('zoom-in').onclick = () => {
             currentZoom = Math.min(currentZoom * 1.4, 3.0); // Maksimum 3x zoom
             updateZoom();
